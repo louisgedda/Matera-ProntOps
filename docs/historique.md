@@ -49,9 +49,9 @@ Résumé des axes :
 
 - **Data & comparaison** — construire un dataset massif draft vs message réellement envoyé, pour nourrir l'amélioration des prompts.
 - **Architecture agents** — scinder l'agent unique de chaque flow en 3 agents spécialisés : récupération historique Front, contexte métier, rédaction du draft.
-- **Amélioration des prompts** — un Make d'entraînement par sujet, exécuté chaque fin de semaine, alimenté par les données de la semaine, piloté par un agent « améliorateur de prompt » (MD + skill dédiés).
+- **Amélioration des prompts** — un Make d'entraînement par sujet, exécuté chaque fin de semaine, alimenté par les données de la semaine, piloté par un agent « améliorateur de prompt » (MD + skill dédiés). *(Mise à jour le 15/09/2026 : architecture en 3 agents conçue et rédigée dans `tools-prompt-improvement/` — voir Journal d'avancement ci-dessous. Le montage effectif du scénario Make reste à faire.)*
 - **Versioning des prompts** — logger le prompt utilisé chaque semaine (Excel ou Notion), avec sélection manuelle en début de semaine après analyse. *(Mise à jour le 15/09/2026 : ce chantier n'est plus porté par Excel/Notion mais directement par le repo GitHub `Matera-ProntOps` — voir l'entrée du 15/09/2026 dans le Journal d'avancement ci-dessous pour le détail de l'implémentation.)*
-- **Réutilisation Pronto** — trier et adapter les prompts fournis par Yann (équipe Data), utilisés sur le projet Pronto, en écartant ce qui est trop lié à leur contexte métier.
+- **Réutilisation Pronto** — trier et adapter les prompts fournis par Yann (équipe Data), utilisés sur le projet Pronto, en écartant ce qui est trop lié à leur contexte métier. *(Mise à jour le 15/09/2026 : premier tri fait — voir Journal d'avancement.)*
 - **Documentation** — MD de process par flow + ce fichier d'historique global.
 - **Optimisation MCP/tools** — connecter directement les agents Make à des MCP/tools plutôt que de la logique custom.
 - **Traçabilité GitHub** — ce repo, comme source d'historique complet du projet (prompts versionnés, MD, logs).
@@ -70,6 +70,11 @@ Résumé des axes :
 | 15/09/2026 | Numérotation des semaines de suivi en `W1`, `W2`... calculée depuis une date de départ de projet (2026-09-14 = semaine 1), plutôt que le numéro de semaine calendaire ISO — pour que la numérotation démarre à 1 avec le projet, pas avec l'année. |
 | 15/09/2026 | Un script d'assemblage (`assemble_weekly_prompt.py`) concatène chaque semaine, pour un sujet donné, les 3 fichiers (instructions globales + façon de parler + structuration métier) en un seul fichier figé `prompts/weekly/<sujet>-W<n>.md`, avec traçabilité des versions sources (SHA GitHub) dans l'en-tête. Relancer le script sur un sujet déjà traité la même semaine met à jour le fichier existant plutôt que d'en créer un doublon. |
 | 15/09/2026 | La brique "historique de conversation" (3e agent envisagé initialement) est mise en pause : non intégrée à l'assemblage pour l'instant, réintégrable plus tard sans changer l'architecture. |
+| 15/09/2026 | La boucle d'amélioration hebdomadaire des prompts est conçue en 3 agents distincts (classification, correction, assemblage), plutôt qu'un agent unique qui ferait tout — chaque agent a une seule responsabilité, dans l'esprit "une règle = une seule couche" déjà appliqué aux prompts eux-mêmes. |
+| 15/09/2026 | Taxonomie figée de 5 axes de classification des écarts draft/envoi (ton-registre-vocabulaire, concision-structure-format, règle métier/process, donnée mal interprétée/hallucinée, comportement face au cas/escalade), chacun pré-mappé à une couche cible (`Consignes.md`, `-metier.md`, ou `-message.md`) et une nature (métier ou vocabulaire) — pour que l'agent de correction n'ait jamais à deviner où placer une règle. |
+| 15/09/2026 | Une proposition de modification de prompt n'est retenue que si l'écart se répète sur au moins 2 cas dans la semaine, sauf faute grave (fait inventé, engagement non tenable) qui peut être retenue même isolée — pour éviter le sur-ajustement sur un cas unique. |
+| 15/09/2026 | Aucune modification de prompt n'est appliquée ou committée automatiquement : chaque étape (classification → correction → assemblage → régénération de test) reste une proposition, validée par Louis avant tout commit sur `main`. |
+| 15/09/2026 | Réutilisation ciblée de la méthodologie du projet Pronto (équipe Data) : la boucle de review en étapes, la taxonomie de causes racines, l'ordre de préférence des types de fix, et la philosophie d'écriture des prompts sont repris. Ce qui est spécifique à leur stack (Langfuse, CLI de replay, api-core, agents finance/comptabilité/AG/mutation propres à la Copropriété) n'est pas repris — hors périmètre de la Gestion Locative. |
 
 ## 5. Journal d'avancement
 
@@ -91,6 +96,14 @@ Résumé des axes :
 - Écriture du script `assemble_weekly_prompt.py` (Python, API GitHub Contents — pas de clone git local) : lit les 3 fichiers sources d'un sujet, les concatène avec un en-tête de traçabilité (SHA des sources), et commit le résultat dans `prompts/weekly/<sujet>-W<n>.md`. Testé et validé en conditions réelles sur les sujets Sinistres et Règlement loyer.
 - Plusieurs itérations sur la convention de nommage des fichiers (suffixes `-message.md` / `-metier.md`, dossier `consignes.generales/Consignes.md`) pour que le script puisse construire les chemins de façon prévisible à partir du seul nom du sujet.
 - Nettoyage du premier essai généré avec l'ancienne numérotation calendaire (`sinistres-2026-W38.md`), supprimé au profit de la convention `W1`.
+- **Conception de la boucle d'amélioration hebdomadaire des prompts**, avec Claude : analyse de 3 MD internes du projet Pronto (équipe Data — `pronto_simulation_review`, `pronto_architecture`, `pronto_tool_authoring`), tri de ce qui est réutilisable (boucle de review en étapes, taxonomie de causes racines, ordre de préférence des fixs, philosophie d'écriture des prompts, distinction connaissance factuelle vs `[Answering Guideline]`, principe d'auto-amélioration, calibration de confiance) vs ce qui est spécifique à leur stack (Langfuse, CLI `pronto_replay`, api-core, agents métier Copropriété).
+- Définition de la taxonomie des 5 axes de classification des écarts draft/envoi, chacun pré-mappé à une couche cible et une nature (métier/vocabulaire), et du seuil de répétition (≥ 2 cas, sauf faute grave) avant de transformer un écart en proposition de règle.
+- Rédaction de 4 fichiers dans `tools-prompt-improvement/` :
+  - `agent-comparaison-classification.md` — Agent 1 : compare `draft_ia` et `version_envoyee` par ticket, classe l'écart selon les 5 axes, filtre les cas non-actionnables.
+  - `agent-correction-prompt.md` — Agent 2 : reçoit le tableau agrégé des écarts classifiés de la semaine + le contenu actuel des 3 prompts du domaine, propose des modifications ciblées (ajout/reformulation/suppression) avec justification et nombre de cas concernés.
+  - `agent-assemblage.md` — Agent 2bis : applique les propositions validées au contenu actuel d'un fichier pour produire la version candidate complète, sans toucher à rien d'autre que les passages ciblés.
+  - `plan-make-prompt-modification.md` — schéma global du scénario Make (trigger hebdo → comparaison/classification → agrégation → correction → assemblage → régénération de draft de test → validation humaine → commit).
+- Reste à faire : monter concrètement le scénario Make (les 4 fichiers sont les prompts des modules IA, pas encore branchés), et l'agent de régénération de draft de test (Agent 3) n'est pas encore rédigé.
 
 ## 6. Liens de référence
 
@@ -102,3 +115,4 @@ Résumé des axes :
 - Règle Front (trigger feedback) : https://app.frontapp.com/settings/tim:2307590/rules/edit/5651974
 - Macro Front (feedback) : https://app.frontapp.com/settings/tim:2307590/rules/macros/edit/6086
 - Make log feedback : https://eu1.make.com/9872/scenarios/6461501/edit
+- Boucle d'amélioration des prompts (agents) : `tools-prompt-improvement/agent-comparaison-classification.md`, `tools-prompt-improvement/agent-correction-prompt.md`, `tools-prompt-improvement/agent-assemblage.md`, `tools-prompt-improvement/plan-make-prompt-modification.md`
