@@ -1,6 +1,6 @@
 # ProntOps — Historique du projet
 
-> Fichier vivant : à mettre à jour à chaque avancée (nouvelle décision, nouveau flow, changement d'architecture). Chaque entrée du journal est datée ; ne pas réécrire l'historique passé, seulement ajouter.
+Fichier vivant : à mettre à jour à chaque avancée (nouvelle décision, nouveau flow, changement d'architecture). Chaque entrée du journal est datée ; ne pas réécrire l'historique passé, seulement ajouter.
 
 ## 1. Objectif du projet
 
@@ -9,65 +9,88 @@ Atteindre 100 % des mails envoyés par les cares sans retouche : les drafts gén
 ## 2. Architecture actuelle (au 11/09/2026)
 
 ### 2.1 Sujets traités
-- **Sinistres**
-- **Règlements loyers**
+
+- Sinistres
+- Règlements loyers
 
 ### 2.2 Flow de création de draft (par sujet)
+
 Pour chaque sujet, un scénario Make dédié :
+
 1. Récupère l'historique de la conversation Front.
 2. Applique un process défini via un tool.
 3. Passe par un agent IA (Claude, module Make) qui prend en entrée le contexte de conversation + le contexte métier.
 4. Génère un draft de réponse.
 5. Tague 5 conversations par assignee pour qu'elles remontent dans une vue Front dédiée à la notation.
 6. Met à jour :
-   - le Gsheet de log des tickets ([lien](https://docs.google.com/spreadsheets/d/1pnAYoW_UZNvMOHS65usedwp8gFQtjgmf-6NE-V3gu8Y/edit?gid=0))
-   - le Gsheet de suivi de notation du sujet ([sujet 1](https://docs.google.com/spreadsheets/d/1RDJvZdBM3_rj23fzSDFQZqIDb-hP3eTiyr9UohDqt94/edit?gid=0), [sujet 2](https://docs.google.com/spreadsheets/d/1EzpLuHUExxwHwmHqdHNvId3f7s_755h7-AcBl0Jioxc/edit?gid=0))
+   - le Gsheet de log des tickets (lien)
+   - le Gsheet de suivi de notation du sujet (sujet 1, sujet 2)
 
-Déclencheur : [règle Front](https://app.frontapp.com/settings/tim:2307590/rules/edit/5651398).
+Déclencheur : règle Front.
 
 ### 2.3 Flow de feedback (global)
-1. Le care ajoute la [macro](https://app.frontapp.com/settings/tim:2307590/rules/macros/edit/6086) sur la conversation.
-2. Une [règle Front](https://app.frontapp.com/settings/tim:2307590/rules/edit/5651974) se déclenche et appelle un Make.
-3. Le [Make de log des feedbacks](https://eu1.make.com/9872/scenarios/6461501/edit) écrit la note et la comparaison draft/version envoyée dans le Gsheet de log des tickets.
+
+- Le care ajoute la macro sur la conversation.
+- Une règle Front se déclenche et appelle un Make.
+- Le Make de log des feedbacks écrit la note et la comparaison draft/version envoyée dans le Gsheet de log des tickets.
 
 ### 2.4 Inventaire Make actuel
+
 - 1 Make « draft » par sujet (Sinistres, Règlements loyers) → 2 Makes
 - 1 Make global de log des feedbacks
-- **Total : 3 scénarios Make en production**
+
+Total : 3 scénarios Make en production.
 
 ## 3. Chantiers en cours / à venir
 
-Détail complet dans le Kanban Notion : [ProntOps - Kanban détaillé](https://app.notion.com/p/3d86513772f8810592aacfb678c2068a).
+Détail complet dans le Kanban Notion : ProntOps - Kanban détaillé.
 
 Résumé des axes :
-1. **Data & comparaison** — construire un dataset massif draft vs message réellement envoyé, pour nourrir l'amélioration des prompts.
-2. **Architecture agents** — scinder l'agent unique de chaque flow en 3 agents spécialisés : récupération historique Front, contexte métier, rédaction du draft.
-3. **Amélioration des prompts** — un Make d'entraînement par sujet, exécuté chaque fin de semaine, alimenté par les données de la semaine, piloté par un agent « améliorateur de prompt » (MD + skill dédiés).
-4. **Versioning des prompts** — logger le prompt utilisé chaque semaine (Excel ou Notion), avec sélection manuelle en début de semaine après analyse.
-5. **Réutilisation Pronto** — trier et adapter les prompts fournis par Yann (équipe Data), utilisés sur le projet Pronto, en écartant ce qui est trop lié à leur contexte métier.
-6. **Documentation** — MD de process par flow + ce fichier d'historique global.
-7. **Optimisation MCP/tools** — connecter directement les agents Make à des MCP/tools plutôt que de la logique custom.
-8. **Traçabilité GitHub** — ce repo, comme source d'historique complet du projet (prompts versionnés, MD, logs).
-9. **Reporting** — reporting hebdomadaire du nombre de tickets traités et de la note moyenne, par sujet.
+
+- **Data & comparaison** — construire un dataset massif draft vs message réellement envoyé, pour nourrir l'amélioration des prompts.
+- **Architecture agents** — scinder l'agent unique de chaque flow en 3 agents spécialisés : récupération historique Front, contexte métier, rédaction du draft.
+- **Amélioration des prompts** — un Make d'entraînement par sujet, exécuté chaque fin de semaine, alimenté par les données de la semaine, piloté par un agent « améliorateur de prompt » (MD + skill dédiés).
+- **Versioning des prompts** — logger le prompt utilisé chaque semaine (Excel ou Notion), avec sélection manuelle en début de semaine après analyse. *(Mise à jour le 15/09/2026 : ce chantier n'est plus porté par Excel/Notion mais directement par le repo GitHub `Matera-ProntOps` — voir l'entrée du 15/09/2026 dans le Journal d'avancement ci-dessous pour le détail de l'implémentation.)*
+- **Réutilisation Pronto** — trier et adapter les prompts fournis par Yann (équipe Data), utilisés sur le projet Pronto, en écartant ce qui est trop lié à leur contexte métier.
+- **Documentation** — MD de process par flow + ce fichier d'historique global.
+- **Optimisation MCP/tools** — connecter directement les agents Make à des MCP/tools plutôt que de la logique custom.
+- **Traçabilité GitHub** — ce repo, comme source d'historique complet du projet (prompts versionnés, MD, logs).
+- **Reporting** — reporting hebdomadaire du nombre de tickets traités et de la note moyenne, par sujet.
 
 ## 4. Décisions prises
 
 | Date | Décision |
-|------|----------|
+|---|---|
 | 11/09/2026 | Le rythme d'ajustement des prompts sera hebdomadaire (fin de semaine), pas à chaque envoi, pour éviter le sur-ajustement sur un seul feedback. |
 | 11/09/2026 | Chaque flow de création de draft sera scindé en 3 agents spécialisés plutôt qu'un agent monolithique. |
 | 11/09/2026 | Le choix du prompt à utiliser chaque semaine reste une décision manuelle, basée sur une analyse humaine en début de semaine. |
-| 11/09/2026 | Le suivi historique du projet est stocké dans ce repo GitHub (louisgedda/Matera-ProntOps), fichier `docs/historique.md`. |
+| 11/09/2026 | Le suivi historique du projet est stocké dans ce repo GitHub (louisgedda/Matera-ProntOps), fichier docs/historique.md. |
+| 15/09/2026 | Le repo GitHub `Matera-ProntOps` accueille désormais une arborescence `prompts/` dédiée, distincte de `docs/` : chaque sujet est découpé en 2 fichiers réutilisables (façon de parler + structuration métier), plus un fichier d'instructions globales partagé par tous les sujets. |
+| 15/09/2026 | Convention de nommage figée : `prompts/layers/redaction-message/<sujet>-message.md` (façon de parler, spécifique au sujet), `prompts/layers/structuration-metier/<sujet>-metier.md` (connaissance métier factuelle, spécifique au sujet), `prompts/layers/consignes.generales/Consignes.md` (partagé, quasiment jamais modifié). |
+| 15/09/2026 | Numérotation des semaines de suivi en `W1`, `W2`... calculée depuis une date de départ de projet (2026-09-14 = semaine 1), plutôt que le numéro de semaine calendaire ISO — pour que la numérotation démarre à 1 avec le projet, pas avec l'année. |
+| 15/09/2026 | Un script d'assemblage (`assemble_weekly_prompt.py`) concatène chaque semaine, pour un sujet donné, les 3 fichiers (instructions globales + façon de parler + structuration métier) en un seul fichier figé `prompts/weekly/<sujet>-W<n>.md`, avec traçabilité des versions sources (SHA GitHub) dans l'en-tête. Relancer le script sur un sujet déjà traité la même semaine met à jour le fichier existant plutôt que d'en créer un doublon. |
+| 15/09/2026 | La brique "historique de conversation" (3e agent envisagé initialement) est mise en pause : non intégrée à l'assemblage pour l'instant, réintégrable plus tard sans changer l'architecture. |
 
 ## 5. Journal d'avancement
 
 ### 11/09/2026
+
 - Première formalisation du plan d'action et création d'un premier Kanban Notion (axes : feedback cares, qualité des prompts, suivi global).
 - Kanban initial supprimé accidentellement, recréé à l'identique.
 - Description complète de l'architecture réelle du projet (2 Makes de draft par sujet + 1 Make global de feedback, Gsheets associés, règles et macro Front).
 - Définition du plan détaillé : dataset de comparaison draft/envoyé, séparation en 3 agents par flow, boucle hebdomadaire d'amélioration des prompts, versioning des prompts, réutilisation des prompts Pronto, documentation MD, optimisation MCP/tools, repo GitHub, reporting hebdomadaire.
-- Nouveau Kanban Notion détaillé créé (22 cartes, 9 axes, propriétés Sujet/Axe/Priorité/Lien) : [lien](https://app.notion.com/p/3d86513772f8810592aacfb678c2068a).
-- Connexion du repo GitHub `louisgedda/Matera-ProntOps` et migration de ce fichier d'historique dans `docs/historique.md`.
+- Nouveau Kanban Notion détaillé créé (22 cartes, 9 axes, propriétés Sujet/Axe/Priorité/Lien) : lien.
+- Connexion du repo GitHub louisgedda/Matera-ProntOps et migration de ce fichier d'historique dans docs/historique.md.
+
+### 15/09/2026
+
+- Mise en place de l'arborescence `prompts/` sur le repo GitHub, en complément de `docs/` : séparation claire entre les briques de prompt réutilisables (`prompts/layers/`) et leurs assemblages hebdomadaires figés (`prompts/weekly/`).
+- Rédaction et intégration du contenu des deux premiers sujets :
+  - **Sinistres & Travaux** (agent orienté BAILLEURS) : classification par tags Front (signalement, devis, garantie/assurance, relance), garde-fous financiers, et base de connaissance métier dédiée (répartition locataire/bailleur selon le décret n°87-712, degrés d'urgence Matera, garanties GPA/biennale/décennale-DO, règles dégât des eaux, process travaux).
+  - **Solde locataire & règlement loyer** (agent orienté LOCATAIRES) : classification par cas (accusé de réception, question factuelle sur solde/quittance, litige/anomalie), garde-fous propres au solde locataire.
+- Écriture du script `assemble_weekly_prompt.py` (Python, API GitHub Contents — pas de clone git local) : lit les 3 fichiers sources d'un sujet, les concatène avec un en-tête de traçabilité (SHA des sources), et commit le résultat dans `prompts/weekly/<sujet>-W<n>.md`. Testé et validé en conditions réelles sur les sujets Sinistres et Règlement loyer.
+- Plusieurs itérations sur la convention de nommage des fichiers (suffixes `-message.md` / `-metier.md`, dossier `consignes.generales/Consignes.md`) pour que le script puisse construire les chemins de façon prévisible à partir du seul nom du sujet.
+- Nettoyage du premier essai généré avec l'ancienne numérotation calendaire (`sinistres-2026-W38.md`), supprimé au profit de la convention `W1`.
 
 ## 6. Liens de référence
 
